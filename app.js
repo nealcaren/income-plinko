@@ -54,9 +54,20 @@ const binColorOrder = ["orange", "red", "green", "blue", "purple"];
 const BIN_COUNT = binColorOrder.length;
 
 // U.S. Census Bureau 2024: share of aggregate household income by quintile
-const target = { purple: 52, blue: 23, green: 14, red: 8, orange: 3 };
+const incomeTarget = { purple: 52, blue: 23, green: 14, red: 8, orange: 3 };
+// Federal Reserve 2024: share of household wealth by quintile
+const wealthTarget = { purple: 83, blue: 11, green: 4, red: 1, orange: 1 };
+
+function getTarget() {
+  return state.mode === "wealth" ? wealthTarget : incomeTarget;
+}
+
+function getModeLabel() {
+  return state.mode === "wealth" ? "Wealth" : "Income";
+}
 
 const state = {
+  mode: "income",
   gravity: DEFAULT_GRAVITY,
   spawnPerSec: DEFAULT_SPAWN,
   pegs: [],
@@ -485,38 +496,73 @@ function getCurrentByColor() {
 function computeMetrics() {
   const currentByColor = getCurrentByColor();
   const windowCount = state.recentBins.length;
+  const t = getTarget();
 
   const totalAbsError = colorIds.reduce(
-    (sum, colorId) => sum + Math.abs(currentByColor[colorId] - target[colorId]),
+    (sum, colorId) => sum + Math.abs(currentByColor[colorId] - t[colorId]),
     0
   );
 
-  const score = windowCount === 0 ? 0 : Math.max(0, Math.round(100 - totalAbsError * 1.15));
+  // Wealth mode is much harder — score more generously
+  const penalty = state.mode === "wealth" ? 0.7 : 1.15;
+  const score = windowCount === 0 ? 0 : Math.max(0, Math.round(100 - totalAbsError * penalty));
 
   return {
     currentByColor,
-    targetByColor: target,
+    targetByColor: t,
     score,
     windowCount,
   };
 }
 
 function getScoreMessage(score, cur) {
-  if (score >= 97) return "Nailed it! That's America.";
+  const t = getTarget();
+  const isWealth = state.mode === "wealth";
+
+  if (score >= 97) return isWealth ? "Nailed it! That's how skewed wealth really is." : "Nailed it! That's America.";
   if (score >= 94) return "Almost perfect \u2014 tiny tweaks!";
-  if (score >= 90) return "Impressive! You really get inequality.";
+  if (score >= 90) return isWealth ? "Impressive! You get how extreme wealth concentration is." : "Impressive! You really get inequality.";
   if (score >= 88) return "Dialed in \u2014 just a nudge or two off.";
 
-  // Analyze what's actually wrong
-  const topDiff = cur.purple - target.purple;       // 80-100%
-  const upperDiff = cur.blue - target.blue;          // 60-80%
-  const midDiff = cur.green - target.green;          // 40-60%
-  const lowerDiff = cur.red - target.red;            // 20-40%
-  const bottomDiff = cur.orange - target.orange;     // 0-20%
+  const topDiff = cur.purple - t.purple;
+  const upperDiff = cur.blue - t.blue;
+  const midDiff = cur.green - t.green;
+  const lowerDiff = cur.red - t.red;
+  const bottomDiff = cur.orange - t.orange;
   const bottomHalf = cur.orange + cur.red;
   const topHalf = cur.purple + cur.blue;
   const bottomThree = cur.orange + cur.red + cur.green;
 
+  if (isWealth) {
+    if (score >= 78) {
+      if (topDiff < -5) return "Almost! Even more needs to pool at the very top.";
+      if (topDiff > 5) return "Close, but even the top quintile doesn't hoard that much.";
+      if (bottomThree > 12) return "Nearly there \u2014 the bottom 60% owns almost nothing.";
+      return "So close! Fine-tune your levers.";
+    }
+    if (score >= 60) {
+      if (topDiff < -15) return "The top 20% holds 83% of all wealth. Send way more right!";
+      if (topDiff < -8) return "Not enough pooling at the top \u2014 wealth is super concentrated.";
+      if (bottomThree > 25) return "Bottom 60% owns barely 6% combined. Way too much going there.";
+      if (midDiff > 8) return "The middle class has almost no wealth \u2014 shrink that bracket.";
+      if (cur.orange > 5) return "Bottom 20% owns about 1%. You're being too generous.";
+      return "Getting there \u2014 pause and check which brackets are off.";
+    }
+    if (score >= 40) {
+      if (topDiff < -30) return "83% of wealth goes to the top 20%. That's not a typo.";
+      if (Math.abs(cur.purple - 20) < 8) return "Way too equal! Wealth is wildly more concentrated than income.";
+      if (bottomHalf > 20) return "Bottom 40% owns about 2% of wealth. Not 20%.";
+      if (cur.orange > 10) return "Bottom 20% owns virtually nothing. Really.";
+      if (cur.purple > 92) return "Even the real numbers aren't quite that extreme!";
+      return "Big gaps \u2014 try angling levers to push almost everything right.";
+    }
+    if (cur.purple < 40) return "The top quintile needs way more \u2014 think 83%.";
+    if (bottomThree > 40) return "Bottom 60% combined owns 6%. You've given them way too much.";
+    if (state.levers.length === 0 && state.totalCaptured > 20) return "Try drawing some levers to redirect the flow!";
+    return "Wealth is even more lopsided than income \u2014 keep experimenting!";
+  }
+
+  // Income mode messages
   if (score >= 78) {
     if (topDiff < -5) return "Almost! The top quintile needs a bigger slice.";
     if (topDiff > 5) return "Close, but too much is pooling at the top.";
@@ -549,7 +595,6 @@ function getScoreMessage(score, cur) {
     return "Big gaps \u2014 try angling some levers.";
   }
 
-  // Very low scores
   if (topHalf < 30) return "Almost nothing reaches the top. Funnel it right!";
   if (bottomHalf > 50) return "Half the income to the bottom 40%? If only.";
   if (bottomThree > 70) return "70%+ to the bottom three quintiles? That's Sweden's dream.";
@@ -571,7 +616,8 @@ function updateHud() {
   const metrics = computeMetrics();
   renderStackRow(state.barRefs.currentTrack, metrics.currentByColor, "Current");
   const msg = getScoreMessage(metrics.score, metrics.currentByColor);
-  statusText.textContent = `Score: ${metrics.score} \u2014 ${msg}`;
+  const prefix = state.mode === "wealth" ? "Wealth" : "Score";
+  statusText.textContent = `${prefix}: ${metrics.score} \u2014 ${msg}`;
   statusText.style.color = getScoreColor(metrics.score);
 }
 
@@ -943,7 +989,9 @@ canvas.addEventListener("pointerleave", onPointerRelease);
 
 function renderPausedStats() {
   const metrics = computeMetrics();
+  const modeLabel = getModeLabel();
   let html = '<div class="stats-card">';
+  html += `<p class="stats-mode-label">Mode: U.S. ${modeLabel} Distribution</p>`;
   html += '<div class="stats-grid">';
   html += '<div class="stats-header"><span>Quintile</span><span>Current</span><span>Target</span><span>Diff</span></div>';
   binColorOrder.forEach((colorId) => {
@@ -952,18 +1000,27 @@ function renderPausedStats() {
     const t = metrics.targetByColor[colorId];
     const diff = current - t;
     const sign = diff >= 0 ? "+" : "";
-    const close = Math.abs(diff) < 3;
-    html += `<div class="stats-row"><span class="stats-color">${swatch}${colorGroups[colorId].label}</span><span class="stats-current">${current.toFixed(1)}%</span><span class="stats-target">${t}%</span><span class="stats-diff${close ? " close" : ""}">${sign}${diff.toFixed(1)}</span></div>`;
+    const diffClass = diff > 0.5 ? "over" : diff < -0.5 ? "under" : "close";
+    html += `<div class="stats-row"><span class="stats-color">${swatch}${colorGroups[colorId].label}</span><span class="stats-current">${current.toFixed(1)}%</span><span class="stats-target">${t}%</span><span class="stats-diff ${diffClass}">${sign}${diff.toFixed(1)}</span></div>`;
   });
   html += "</div>";
   html += `<p class="stats-score">Score: ${metrics.score}/100</p>`;
   html += `<p class="stats-note">Based on last ${metrics.windowCount} balls</p>`;
+  const otherMode = state.mode === "income" ? "wealth" : "income";
+  const otherLabel = state.mode === "income" ? "Wealth" : "Income";
+  html += `<button id="modeToggleBtn" class="mode-toggle-btn">Switch to ${otherLabel} Mode</button>`;
   html += '<p class="stats-note"><a href="#" id="statsHelpLink" style="color:#6366f1">How to play</a></p>';
   html += "</div>";
   statsContent.innerHTML = html;
   statsContent.querySelector("#statsHelpLink").addEventListener("click", (e) => {
     e.preventDefault();
     openRulesModal(false);
+  });
+  statsContent.querySelector("#modeToggleBtn").addEventListener("click", () => {
+    state.mode = otherMode;
+    resetCounts();
+    state.particles = [];
+    renderPausedStats();
   });
 }
 

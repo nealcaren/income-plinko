@@ -360,11 +360,35 @@ h2 {
 
 .stats-diff {
   font-weight: 700;
+}
+
+.stats-diff.over {
+  color: #16a34a;
+}
+
+.stats-diff.under {
   color: #ef4444;
 }
 
 .stats-diff.close {
-  color: #16a34a;
+  color: #64748b;
+}
+
+.stats-mode-label {
+  margin: 0 0 0.3rem;
+  font: 700 0.78rem/1 "Baloo 2", sans-serif;
+  color: #6366f1;
+  text-align: center;
+}
+
+.mode-toggle-btn {
+  width: 100%;
+  margin-top: 0.35rem;
+  background: linear-gradient(110deg, #6366f1, #0ea5e9);
+  color: #fff;
+  font-size: 0.72rem;
+  min-height: 30px;
+  padding: 0.32rem 0.5rem;
 }
 
 .stats-score {
