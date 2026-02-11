@@ -25,7 +25,7 @@ canvas.height = Math.round(1000 * shellRect.height / shellRect.width);
 const W = canvas.width;
 const H = canvas.height;
 const BIN_HEIGHT = 200;
-const PEG_RADIUS = 7;
+const PEG_RADIUS = 12;
 const PARTICLE_RADIUS = 7;
 const MAX_PARTICLES = 320;
 const LEVER_HIT_RADIUS = isCoarsePointer ? 22 : 12;
@@ -616,15 +616,27 @@ function drawBins() {
   const binWidth = W / BIN_COUNT;
   const yTop = H - BIN_HEIGHT;
 
-  ctx.fillStyle = "rgba(255, 255, 255, 0.64)";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
   ctx.fillRect(0, yTop, W, BIN_HEIGHT);
 
   for (let i = 0; i < BIN_COUNT; i += 1) {
     const colorId = binColorOrder[i];
-    ctx.fillStyle = hexToRgba(colorGroups[colorId].hex, 0.28);
+    ctx.fillStyle = hexToRgba(colorGroups[colorId].hex, 0.38);
     ctx.fillRect(i * binWidth, yTop, binWidth, BIN_HEIGHT);
   }
 
+  // Quintile labels at top of each bin
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.font = "bold 24px Chivo";
+  for (let i = 0; i < BIN_COUNT; i += 1) {
+    const colorId = binColorOrder[i];
+    const cx = i * binWidth + binWidth / 2;
+    ctx.fillStyle = hexToRgba(colorGroups[colorId].hex, 0.7);
+    ctx.fillText(colorGroups[colorId].label, cx, yTop + 8);
+  }
+
+  // Bin dividers
   ctx.strokeStyle = "rgba(51, 65, 85, 0.5)";
   ctx.lineWidth = 3;
   for (let i = 1; i < BIN_COUNT; i += 1) {
@@ -635,12 +647,19 @@ function drawBins() {
     ctx.stroke();
   }
 
+  // Top line separating play area from bins
   ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(51, 65, 85, 0.6)";
+  ctx.beginPath();
+  ctx.moveTo(0, yTop);
+  ctx.lineTo(W, yTop);
+  ctx.stroke();
+
+  // Bottom line
   ctx.beginPath();
   ctx.moveTo(0, H - 2);
   ctx.lineTo(W, H - 2);
   ctx.stroke();
-
 }
 
 function drawPegs() {
@@ -690,9 +709,12 @@ function drawParticles() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = "bold 48px Chivo";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
   for (const p of state.particles) {
     ctx.save();
     ctx.translate(p.x, p.y);
+    ctx.strokeText("$", 0, 2);
     ctx.fillStyle = "#16a34a";
     ctx.fillText("$", 0, 2);
     ctx.restore();
@@ -747,7 +769,7 @@ function drawBinStack() {
       const row = Math.floor(j / cols);
       const x = binLeft + col * spacing + spacing / 2;
       const y = H - 14 - row * spacing;
-      if (y < H - BIN_HEIGHT + 10) break;
+      if (y < H - BIN_HEIGHT + 38) break;
       ctx.fillText("$", x, y);
     }
   }

@@ -77,6 +77,12 @@ body {
   cursor: pointer;
 }
 
+.icon-btn-spacer {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+}
+
 button {
   border: 0;
   border-radius: 8px;
@@ -168,7 +174,8 @@ h2 {
 .status {
   margin-top: 0.24rem;
   min-height: 1.08rem;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .bars {
@@ -192,7 +199,7 @@ h2 {
 
 .stack-track {
   position: relative;
-  height: 0.76rem;
+  height: 1rem;
   border-radius: 999px;
   background: #e2e8f0;
   overflow: hidden;
@@ -324,10 +331,12 @@ h2 {
 .pause-btn {
   width: 100%;
   margin-top: 0.32rem;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 0.76rem;
-  min-height: 32px;
+  background: #e0e7ff;
+  color: #312e81;
+  font-size: 0.82rem;
+  min-height: 36px;
+  letter-spacing: 0.03em;
+  border: 2px solid rgba(99, 102, 241, 0.25);
 }
 
 .pause-btn.is-paused {
@@ -445,6 +454,11 @@ h2 {
   .icon-btn {
     min-width: 44px;
     min-height: 44px;
+  }
+
+  .icon-btn-spacer {
+    width: 44px;
+    height: 44px;
   }
 
   button:hover {
