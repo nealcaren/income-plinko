@@ -24,7 +24,7 @@ canvas.height = Math.round(1000 * shellRect.height / shellRect.width);
 
 const W = canvas.width;
 const H = canvas.height;
-const BIN_HEIGHT = 120;
+const BIN_HEIGHT = 200;
 const PEG_RADIUS = 7;
 const PARTICLE_RADIUS = 7;
 const MAX_PARTICLES = 320;
@@ -578,27 +578,10 @@ function update(dt) {
     for (const peg of state.pegs) collideCircle(p, peg.x, peg.y, peg.r, 0.68);
     for (const lever of state.levers) collideLever(p, lever);
 
-    if (p.y > H - BIN_HEIGHT - p.r) {
-      for (let b = 1; b < BIN_COUNT; b += 1) {
-        const wallX = b * binWidth;
-        const diff = p.x - wallX;
-        const min = p.r + 2;
-        if (Math.abs(diff) < min) {
-          const dir = diff === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(diff);
-          p.x = wallX + dir * min;
-          p.vx = -p.vx * 0.62;
-        }
-      }
-    }
-
-    if (p.y >= H - p.r && p.vy > 0) {
+    if (p.y >= H - BIN_HEIGHT && p.vy > 0) {
       captureInBin(p);
       state.particles.splice(i, 1);
       continue;
-    }
-
-    if (p.y > H + 120) {
-      state.particles.splice(i, 1);
     }
   }
 }
@@ -745,12 +728,12 @@ function closeRulesModal() {
 
 function drawBinStack() {
   const binWidth = W / BIN_COUNT;
-  const spacing = 32;
+  const spacing = 20;
   const cols = Math.floor((binWidth - 8) / spacing);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 30px Chivo";
+  ctx.font = "bold 20px Chivo";
 
   for (let i = 0; i < BIN_COUNT; i += 1) {
     const count = state.counts[i];
