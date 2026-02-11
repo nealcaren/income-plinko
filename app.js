@@ -500,20 +500,49 @@ function computeMetrics() {
   };
 }
 
-function getScoreMessage(score) {
-  if (score >= 97) return "Perfection!";
-  if (score >= 93) return "So close to perfect!";
+function getScoreMessage(score, cur) {
+  if (score >= 97) return "Nailed it!";
+  if (score >= 93) return "Almost perfect \u2014 tiny tweaks!";
   if (score >= 88) return "Dialed in!";
-  if (score >= 83) return "Almost there, tiny tweaks!";
-  if (score >= 78) return "Really solid setup!";
-  if (score >= 72) return "Getting warm!";
-  if (score >= 65) return "On the right track.";
-  if (score >= 55) return "Making progress, keep experimenting.";
-  if (score >= 45) return "Check which bins are off.";
-  if (score >= 35) return "Try angling some levers.";
-  if (score >= 25) return "The dollars aren't cooperating yet.";
-  if (score >= 15) return "Big gaps \u2014 rethink your strategy!";
-  return "Wild ride! Try adding some levers.";
+
+  // Analyze what's actually wrong
+  const topDiff = cur.purple - target.purple;       // 80-100%
+  const upperDiff = cur.blue - target.blue;          // 60-80%
+  const midDiff = cur.green - target.green;          // 40-60%
+  const lowerDiff = cur.red - target.red;            // 20-40%
+  const bottomDiff = cur.orange - target.orange;     // 0-20%
+  const bottomHalf = cur.orange + cur.red;
+  const topHalf = cur.purple + cur.blue;
+
+  if (score >= 78) {
+    // Close — give specific nudge
+    if (topDiff < -5) return "Almost! A bit more needs to reach the top.";
+    if (bottomDiff > 4) return "Close! The poorest quintile is getting too much.";
+    if (midDiff > 4) return "Nearly there \u2014 slim down the middle class a bit.";
+    return "So close! Fine-tune your levers.";
+  }
+
+  if (score >= 60) {
+    if (topDiff < -12) return "The top 20% needs way more of the pie.";
+    if (bottomHalf > 35) return "Too much at the bottom \u2014 reality is harsher.";
+    if (midDiff > 10) return "Middle class is too big. Shrink it.";
+    if (topDiff > 10) return "Even the real economy isn't that top-heavy!";
+    return "Getting there \u2014 check which quintiles are off.";
+  }
+
+  if (score >= 40) {
+    if (topDiff < -20) return "The rich aren't rich enough yet. Seriously.";
+    if (Math.abs(cur.purple - 20) < 5 && Math.abs(cur.orange - 20) < 5) return "Too equal! The real world is less fair.";
+    if (bottomHalf > 40) return "Way too much going to the bottom half.";
+    if (midDiff > 15) return "That's a huge middle class \u2014 not how it works.";
+    return "Big gaps \u2014 try angling some levers.";
+  }
+
+  // Very low scores
+  if (topHalf < 30) return "Almost nothing reaches the top. Funnel it right!";
+  if (bottomHalf > 50) return "Half the income to the bottom 40%? If only.";
+  if (state.levers.length === 0 && state.totalCaptured > 20) return "Try drawing some levers to redirect the flow!";
+  return "Wild distribution \u2014 keep experimenting!";
 }
 
 function getScoreColor(score) {
@@ -526,7 +555,8 @@ function getScoreColor(score) {
 function updateHud() {
   const metrics = computeMetrics();
   renderStackRow(state.barRefs.currentTrack, metrics.currentByColor, "Current");
-  statusText.textContent = `Score: ${metrics.score} \u2014 ${getScoreMessage(metrics.score)}`;
+  const msg = getScoreMessage(metrics.score, metrics.currentByColor);
+  statusText.textContent = `Score: ${metrics.score} \u2014 ${msg}`;
   statusText.style.color = getScoreColor(metrics.score);
 }
 
