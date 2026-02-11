@@ -1,11 +1,15 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const modeButtons = document.getElementById("modeButtons");
+const modeMenuBtn = document.getElementById("modeMenuBtn");
 const boardMenuBtn = document.getElementById("boardMenuBtn");
 const statusText = document.getElementById("statusText");
 const modeDescription = document.getElementById("modeDescription");
 const barsEl = document.getElementById("bars");
+const pauseBtn = document.getElementById("pauseBtn");
+const playingHud = document.getElementById("playingHud");
+const pausedStats = document.getElementById("pausedStats");
+const statsContent = document.getElementById("statsContent");
 const pressMenu = document.getElementById("pressMenu");
 const pressMenuTitle = document.getElementById("pressMenuTitle");
 const pressMenuActions = document.getElementById("pressMenuActions");
@@ -39,45 +43,27 @@ const SCORE_WINDOW = 100;
 const RULES_SEEN_KEY = "income_plinko_rules_seen_v1";
 
 const colorGroups = {
-  red: { name: "Red", hex: "#ef4444" },
-  blue: { name: "Blue", hex: "#3b82f6" },
-  yellow: { name: "Yellow", hex: "#eab308" },
-  green: { name: "Green", hex: "#22c55e" },
   purple: { name: "Purple", hex: "#a855f7" },
+  blue: { name: "Blue", hex: "#3b82f6" },
+  green: { name: "Green", hex: "#22c55e" },
+  red: { name: "Red", hex: "#ef4444" },
+  orange: { name: "Orange", hex: "#f97316" },
 };
 
 const colorIds = Object.keys(colorGroups);
-const binColorOrder = ["blue", "yellow", "red", "purple", "green"];
+const binColorOrder = ["purple", "blue", "green", "red", "orange"];
 const BIN_COUNT = binColorOrder.length;
 
 const targets = {
-  flat: {
-    red: 20,
-    blue: 20,
-    yellow: 20,
-    green: 20,
-    purple: 20,
-  },
-  fair: {
-    red: 30,
-    blue: 24,
-    yellow: 10,
-    green: 20,
-    purple: 16,
-  },
-  actual: {
-    red: 40,
-    blue: 25,
-    yellow: 5,
-    green: 18,
-    purple: 12,
-  },
+  flat: { purple: 20, blue: 20, green: 20, red: 20, orange: 20 },
+  fair: { purple: 28, blue: 23, green: 20, red: 17, orange: 12 },
+  actual: { purple: 50, blue: 23, green: 15, red: 9, orange: 3 },
 };
 
 const modeDescriptions = {
-  flat: "Flat: 20% for each color.",
+  flat: "Equal: 20% to each group.",
   fair: "Fair: moderate inequality.",
-  actual: "Actual: Red40 Blue25 Green18 Purple12 Yellow5.",
+  actual: "Actual U.S.: top group gets half.",
   free: "Free Play: no target.",
 };
 
@@ -98,6 +84,7 @@ const state = {
   barRefs: {},
   activePointerId: null,
   menuContext: null,
+  paused: false,
 };
 
 function hexToRgba(hex, alpha) {
@@ -112,18 +99,13 @@ function hexToRgba(hex, alpha) {
 function initBars() {
   barsEl.innerHTML = `
     <div class="stack-row">
-      <div class="stack-label" id="currentLabel">Current %</div>
+      <div class="stack-label">Current %</div>
       <div class="stack-track" id="currentTrack"></div>
-    </div>
-    <div class="stack-row">
-      <div class="stack-label" id="targetLabel">Target %</div>
-      <div class="stack-track" id="targetTrack"></div>
     </div>
     <div class="stack-legend" id="stackLegend"></div>
   `;
 
-  const legend = barsEl.querySelector("#stackLegend");
-  legend.innerHTML = colorIds
+  barsEl.querySelector("#stackLegend").innerHTML = binColorOrder
     .map(
       (colorId) =>
         `<span class="legend-item"><span class="swatch" style="background:${colorGroups[colorId].hex}"></span>${colorGroups[colorId].name}</span>`
@@ -131,17 +113,13 @@ function initBars() {
     .join("");
 
   state.barRefs = {
-    currentLabel: barsEl.querySelector("#currentLabel"),
-    targetLabel: barsEl.querySelector("#targetLabel"),
     currentTrack: barsEl.querySelector("#currentTrack"),
-    targetRow: barsEl.querySelector("#targetTrack").closest(".stack-row"),
-    targetTrack: barsEl.querySelector("#targetTrack"),
   };
 }
 
 function renderStackRow(trackEl, valuesByColor, titlePrefix) {
   trackEl.innerHTML = "";
-  colorIds.forEach((colorId) => {
+  binColorOrder.forEach((colorId) => {
     const pct = Math.max(0, valuesByColor[colorId] || 0);
     const seg = document.createElement("span");
     seg.className = "stack-segment";
@@ -149,13 +127,6 @@ function renderStackRow(trackEl, valuesByColor, titlePrefix) {
     seg.style.background = colorGroups[colorId].hex;
     seg.title = `${titlePrefix} ${colorGroups[colorId].name}: ${pct.toFixed(1)}%`;
     trackEl.appendChild(seg);
-  });
-}
-
-function setActiveButton(container, attr, value) {
-  const buttons = container.querySelectorAll("button");
-  buttons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset[attr] === value);
   });
 }
 
@@ -287,6 +258,14 @@ function resetMenuSheetPosition() {
 }
 
 function buildMenuActions(context) {
+  if (context.kind === "mode-select") {
+    return [
+      { id: "mode-flat", label: "Equal (Flat)" },
+      { id: "mode-fair", label: "Fair (Moderate)" },
+      { id: "mode-actual", label: "Actual U.S." },
+      { id: "mode-free", label: "Free Play" },
+    ];
+  }
   if (context.kind === "game-options") {
     return [
       { id: "show-help", label: "Help" },
@@ -314,6 +293,7 @@ function openMenu(context, title, clientX, clientY) {
     button.dataset.action = action.id;
     button.textContent = action.label;
     if (action.id.startsWith("delete")) button.style.background = "#fee2e2";
+    if (action.id === `mode-${state.mode}`) button.classList.add("is-active");
     pressMenuActions.appendChild(button);
   });
 
@@ -352,6 +332,12 @@ function openGameOptionsMenu() {
 function applyMenuAction(actionId) {
   if (!state.menuContext) return;
   const context = state.menuContext;
+
+  if (actionId.startsWith("mode-")) {
+    state.mode = actionId.replace("mode-", "");
+    updateHud();
+    return;
+  }
 
   if (actionId === "show-help") {
     openRulesModal(false);
@@ -583,34 +569,19 @@ function computeMetrics() {
 function updateHud() {
   const metrics = computeMetrics();
   modeDescription.textContent = modeDescriptions[state.mode];
-
   renderStackRow(state.barRefs.currentTrack, metrics.currentByColor, "Current");
-  if (metrics.targetByColor) {
-    state.barRefs.targetRow.style.display = "grid";
-    state.barRefs.targetTrack.classList.remove("is-disabled");
-    state.barRefs.targetLabel.textContent = "Target %";
-    renderStackRow(state.barRefs.targetTrack, metrics.targetByColor, "Target");
-  } else {
-    state.barRefs.targetRow.style.display = "none";
-  }
 
   if (state.mode === "free") {
-    statusText.textContent = `Free Play active. Live mix from last ${metrics.windowCount}/${SCORE_WINDOW} balls.`;
-    statusText.style.color = "#475569";
-    return;
-  }
-
-  if (metrics.windowCount < 24) {
-    statusText.textContent = `Collect more data. Using last ${metrics.windowCount}/${SCORE_WINDOW} balls.`;
+    statusText.textContent = `Free Play. Last ${metrics.windowCount} balls.`;
     statusText.style.color = "#475569";
   } else if (metrics.score >= 92) {
-    statusText.textContent = `Stable and accurate. Last ${SCORE_WINDOW} balls are very close to target.`;
+    statusText.textContent = `Score: ${metrics.score} -- on target!`;
     statusText.style.color = "#16a34a";
   } else if (metrics.score >= 80) {
-    statusText.textContent = `Close on last ${SCORE_WINDOW}. Nudge lever angles to rebalance colors.`;
+    statusText.textContent = `Score: ${metrics.score} -- close, keep tuning.`;
     statusText.style.color = "#0ea5e9";
   } else {
-    statusText.textContent = `Big gap on last ${SCORE_WINDOW}. Reroute flow for a stable system.`;
+    statusText.textContent = `Score: ${metrics.score} -- needs work.`;
     statusText.style.color = "#ef4444";
   }
 }
@@ -711,7 +682,7 @@ function drawBins() {
 
   for (let i = 0; i < BIN_COUNT; i += 1) {
     const colorId = binColorOrder[i];
-    ctx.fillStyle = hexToRgba(colorGroups[colorId].hex, 0.17);
+    ctx.fillStyle = hexToRgba(colorGroups[colorId].hex, 0.28);
     ctx.fillRect(i * binWidth, yTop, binWidth, BIN_HEIGHT);
   }
 
@@ -858,7 +829,7 @@ function animate(now) {
   const dt = Math.min(0.032, (now - lastTime) / 1000);
   lastTime = now;
 
-  update(dt);
+  if (!state.paused) update(dt);
   draw();
   hudTimer += dt;
   if (hudTimer > 0.09) {
@@ -976,13 +947,59 @@ canvas.addEventListener("pointerup", onPointerRelease);
 canvas.addEventListener("pointercancel", onPointerRelease);
 canvas.addEventListener("pointerleave", onPointerRelease);
 
-modeButtons.addEventListener("click", (event) => {
-  const btn = event.target.closest("button[data-mode]");
-  if (!btn) return;
-  state.mode = btn.dataset.mode;
-  setActiveButton(modeButtons, "mode", state.mode);
-  updateHud();
+function openModeMenu() {
+  const rect = modeMenuBtn.getBoundingClientRect();
+  const context = { kind: "mode-select" };
+  openMenu(context, "Target Mode", rect.left + rect.width * 0.5, rect.bottom + 4);
+}
+
+function renderPausedStats() {
+  const metrics = computeMetrics();
+  let html = '<div class="stats-grid">';
+  binColorOrder.forEach((colorId) => {
+    const current = metrics.currentByColor[colorId];
+    const swatch = `<span class="swatch" style="background:${colorGroups[colorId].hex}"></span>`;
+    let targetInfo = "";
+    if (metrics.targetByColor) {
+      const target = metrics.targetByColor[colorId];
+      const diff = current - target;
+      const sign = diff >= 0 ? "+" : "";
+      const close = Math.abs(diff) < 3;
+      targetInfo = `<span class="stats-target">${target}%</span><span class="stats-diff${close ? " close" : ""}">${sign}${diff.toFixed(1)}</span>`;
+    }
+    html += `<div class="stats-row"><span class="stats-color">${swatch}${colorGroups[colorId].name}</span><span class="stats-current">${current.toFixed(1)}%</span>${targetInfo}</div>`;
+  });
+  html += "</div>";
+  if (metrics.score !== null) {
+    html += `<p class="stats-score">Score: ${metrics.score}/100</p>`;
+  }
+  html += `<p class="stats-note">Based on last ${metrics.windowCount} balls</p>`;
+  statsContent.innerHTML = html;
+}
+
+function togglePause() {
+  state.paused = !state.paused;
+  if (state.paused) {
+    pauseBtn.textContent = "Resume";
+    pauseBtn.classList.add("is-paused");
+    playingHud.hidden = true;
+    pausedStats.hidden = false;
+    renderPausedStats();
+  } else {
+    pauseBtn.textContent = "Pause";
+    pauseBtn.classList.remove("is-paused");
+    playingHud.hidden = false;
+    pausedStats.hidden = true;
+  }
+}
+
+modeMenuBtn.addEventListener("click", () => {
+  hidePressMenu();
+  resetMenuSheetPosition();
+  openModeMenu();
 });
+
+pauseBtn.addEventListener("click", togglePause);
 
 boardMenuBtn.addEventListener("click", () => {
   hidePressMenu();

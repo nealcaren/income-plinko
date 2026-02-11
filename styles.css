@@ -45,23 +45,28 @@ body {
 
 .title-block h1 {
   margin: 0;
+  flex: 1;
+  text-align: center;
   font: 700 1.16rem/1 "Baloo 2", sans-serif;
   letter-spacing: 0.02em;
 }
 
 .title-block p {
-  margin: 0.16rem 0 0.24rem;
-  font-size: 0.78rem;
+  margin: 0.12rem 0 0;
+  font-size: 0.72rem;
 }
+
+.center { text-align: center; }
 
 .title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
 .icon-btn {
+  flex: 0 0 auto;
   min-width: 38px;
   min-height: 38px;
   border: 0;
@@ -70,24 +75,6 @@ body {
   color: #312e81;
   font: 700 1.14rem/1 "Chivo", sans-serif;
   cursor: pointer;
-}
-
-.mode-heading {
-  margin: 0.03rem 0 0.14rem;
-  font-size: 0.83rem;
-}
-
-.mode-buttons {
-  display: flex;
-  gap: 0.3rem;
-  overflow-x: auto;
-  padding-bottom: 0.08rem;
-  scrollbar-width: thin;
-}
-
-.mode-buttons button {
-  flex: 0 0 auto;
-  min-width: 4.9rem;
 }
 
 button {
@@ -311,6 +298,65 @@ h2 {
   width: 100%;
 }
 
+.pause-btn {
+  width: 100%;
+  margin-top: 0.32rem;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.76rem;
+  min-height: 32px;
+}
+
+.pause-btn.is-paused {
+  background: linear-gradient(110deg, var(--brand), var(--brand-2));
+  color: #fff;
+}
+
+.paused-stats[hidden] { display: none; }
+
+.stats-grid {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 5.5rem 3rem 3.5rem 3rem;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.74rem;
+}
+
+.stats-color {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stats-current { font-weight: 700; }
+.stats-target { color: #64748b; }
+
+.stats-diff {
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.stats-diff.close {
+  color: #16a34a;
+}
+
+.stats-score {
+  margin: 0.4rem 0 0;
+  font: 700 0.88rem/1 "Baloo 2", sans-serif;
+}
+
+.stats-note {
+  margin: 0.16rem 0 0;
+  font-size: 0.66rem;
+  color: #94a3b8;
+}
+
 @media (min-width: 760px) {
   .layout {
     width: min(920px, 96vw);
@@ -323,10 +369,6 @@ h2 {
 
   .title-block h1 {
     font-size: 1.28rem;
-  }
-
-  .title-block p {
-    font-size: 0.79rem;
   }
 
   h2 {
@@ -345,14 +387,6 @@ h2 {
 }
 
 @media (max-height: 860px) {
-  .title-block p {
-    display: none;
-  }
-
-  .small {
-    display: none;
-  }
-
   .legend-item {
     font-size: 0.6rem;
   }
