@@ -33,11 +33,11 @@ const SCORE_WINDOW = 100;
 const RULES_SEEN_KEY = "income_plinko_rules_seen_v1";
 
 const colorGroups = {
-  red: { name: "Red", hex: "#e24a5e" },
-  blue: { name: "Blue", hex: "#4b82e6" },
-  yellow: { name: "Yellow", hex: "#f2c744" },
-  green: { name: "Green", hex: "#34b375" },
-  purple: { name: "Purple", hex: "#8b6dde" },
+  red: { name: "Red", hex: "#ef4444" },
+  blue: { name: "Blue", hex: "#3b82f6" },
+  yellow: { name: "Yellow", hex: "#eab308" },
+  green: { name: "Green", hex: "#22c55e" },
+  purple: { name: "Purple", hex: "#a855f7" },
 };
 
 const colorIds = Object.keys(colorGroups);
@@ -308,7 +308,7 @@ function openMenu(context, title, clientX, clientY) {
     button.type = "button";
     button.dataset.action = action.id;
     button.textContent = action.label;
-    if (action.id.startsWith("delete")) button.style.background = "#f8dede";
+    if (action.id.startsWith("delete")) button.style.background = "#fee2e2";
     pressMenuActions.appendChild(button);
   });
 
@@ -591,22 +591,22 @@ function updateHud() {
 
   if (state.mode === "free") {
     statusText.textContent = `Free Play active. Live mix from last ${metrics.windowCount}/${SCORE_WINDOW} balls.`;
-    statusText.style.color = "#2d5140";
+    statusText.style.color = "#475569";
     return;
   }
 
   if (metrics.windowCount < 24) {
     statusText.textContent = `Collect more data. Using last ${metrics.windowCount}/${SCORE_WINDOW} balls.`;
-    statusText.style.color = "#2d5140";
+    statusText.style.color = "#475569";
   } else if (metrics.score >= 92) {
     statusText.textContent = `Stable and accurate. Last ${SCORE_WINDOW} balls are very close to target.`;
-    statusText.style.color = "#1d925f";
+    statusText.style.color = "#16a34a";
   } else if (metrics.score >= 80) {
     statusText.textContent = `Close on last ${SCORE_WINDOW}. Nudge lever angles to rebalance colors.`;
-    statusText.style.color = "#1f74a6";
+    statusText.style.color = "#0ea5e9";
   } else {
     statusText.textContent = `Big gap on last ${SCORE_WINDOW}. Reroute flow for a stable system.`;
-    statusText.style.color = "#b54b4b";
+    statusText.style.color = "#ef4444";
   }
 }
 
@@ -671,24 +671,30 @@ function update(dt) {
   }
 }
 
-function drawBackground() {
-  const gradient = ctx.createLinearGradient(0, 0, 0, H);
-  gradient.addColorStop(0, "#e9fff4");
-  gradient.addColorStop(1, "#9adad6");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, W, H);
+const bgCache = document.createElement("canvas");
+bgCache.width = W;
+bgCache.height = H;
+(function renderBgCache() {
+  const bg = bgCache.getContext("2d");
+  const gradient = bg.createLinearGradient(0, 0, 0, H);
+  gradient.addColorStop(0, "#f8fafc");
+  gradient.addColorStop(1, "#e2e8f0");
+  bg.fillStyle = gradient;
+  bg.fillRect(0, 0, W, H);
 
-  ctx.save();
-  ctx.globalAlpha = 0.06;
-  ctx.fillStyle = "#114931";
+  bg.globalAlpha = 0.05;
+  bg.fillStyle = "#6366f1";
   for (let x = 0; x <= W; x += 22) {
     for (let y = 0; y <= H - BIN_HEIGHT; y += 22) {
-      ctx.beginPath();
-      ctx.arc(x + (y % 11), y, 1.4, 0, Math.PI * 2);
-      ctx.fill();
+      bg.beginPath();
+      bg.arc(x + (y % 11), y, 1.4, 0, Math.PI * 2);
+      bg.fill();
     }
   }
-  ctx.restore();
+})();
+
+function drawBackground() {
+  ctx.drawImage(bgCache, 0, 0);
 }
 
 function drawBins() {
@@ -704,7 +710,7 @@ function drawBins() {
     ctx.fillRect(i * binWidth, yTop, binWidth, BIN_HEIGHT);
   }
 
-  ctx.strokeStyle = "rgba(19, 67, 46, 0.7)";
+  ctx.strokeStyle = "rgba(51, 65, 85, 0.5)";
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(0, yTop);
@@ -720,25 +726,13 @@ function drawBins() {
     ctx.stroke();
   }
 
-  ctx.textAlign = "center";
-  ctx.font = "700 12px Chivo";
-  for (let i = 0; i < BIN_COUNT; i += 1) {
-    const colorId = binColorOrder[i];
-    const x = i * binWidth + binWidth * 0.5;
-    ctx.fillStyle = colorGroups[colorId].hex;
-    ctx.fillText(colorGroups[colorId].name, x, H - 15);
-  }
-
-  ctx.fillStyle = "#16392b";
-  ctx.font = "700 13px Chivo";
-  ctx.fillText("Five color groups (not ranked by board position)", W * 0.5, H - BIN_HEIGHT + 18);
 }
 
 function drawPegs() {
   for (const peg of state.pegs) {
     ctx.beginPath();
-    ctx.fillStyle = "#2a7f5b";
-    ctx.strokeStyle = "#15563b";
+    ctx.fillStyle = "#6366f1";
+    ctx.strokeStyle = "#4338ca";
     ctx.lineWidth = 2;
     ctx.arc(peg.x, peg.y, peg.r, 0, Math.PI * 2);
     ctx.fill();
@@ -750,7 +744,7 @@ function drawLevers() {
   for (let i = 0; i < state.levers.length; i += 1) {
     const lever = state.levers[i];
     const active = state.draggingLever && state.draggingLever.index === i;
-    ctx.strokeStyle = active ? "#f0a517" : "#235ea7";
+    ctx.strokeStyle = active ? "#f59e0b" : "#0ea5e9";
     ctx.lineWidth = lever.t;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -758,7 +752,7 @@ function drawLevers() {
     ctx.lineTo(lever.x2, lever.y2);
     ctx.stroke();
 
-    ctx.fillStyle = active ? "#f0a517" : "#16396f";
+    ctx.fillStyle = active ? "#f59e0b" : "#0369a1";
     ctx.beginPath();
     ctx.arc(lever.x1, lever.y1, active ? 5 : 4, 0, Math.PI * 2);
     ctx.arc(lever.x2, lever.y2, active ? 5 : 4, 0, Math.PI * 2);
@@ -766,7 +760,7 @@ function drawLevers() {
   }
 
   if (state.draftLever) {
-    ctx.strokeStyle = "rgba(15, 55, 110, 0.65)";
+    ctx.strokeStyle = "rgba(14, 165, 233, 0.6)";
     ctx.lineWidth = 5;
     ctx.setLineDash([9, 6]);
     ctx.beginPath();
@@ -780,20 +774,12 @@ function drawLevers() {
 function drawParticles() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "700 9px Chivo";
+  ctx.font = "bold 14px Chivo";
   for (const p of state.particles) {
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(p.rot);
-    ctx.fillStyle = "#80ea95";
-    ctx.strokeStyle = "#2b7f40";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 0, p.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#185728";
-    ctx.fillText("$", 0, 0.5);
+    ctx.fillStyle = "#16a34a";
+    ctx.fillText("$", 0, 1);
     ctx.restore();
   }
 }

@@ -1,12 +1,9 @@
 :root {
-  --bg-top: #f8ffef;
-  --bg-mid: #d9f2d8;
-  --bg-low: #b8e5e0;
-  --ink: #1f2a1f;
-  --panel: rgba(255, 255, 255, 0.86);
-  --card-border: rgba(17, 70, 49, 0.18);
-  --brand: #1d925f;
-  --brand-2: #1f74a6;
+  --ink: #1e293b;
+  --panel: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(99, 102, 241, 0.12);
+  --brand: #6366f1;
+  --brand-2: #0ea5e9;
 }
 
 *,
@@ -35,14 +32,14 @@ body {
 
 .board-wrap {
   background: #fff;
-  border: 1px solid rgba(27, 107, 53, 0.22);
+  border: 1px solid rgba(99, 102, 241, 0.16);
   border-radius: 16px;
   padding: 0.44rem;
   height: calc(100dvh - 0.52rem);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.32rem;
-  box-shadow: 0 12px 35px rgba(16, 61, 41, 0.18);
+  box-shadow: 0 12px 35px rgba(30, 41, 59, 0.12);
   overflow: hidden;
 }
 
@@ -69,8 +66,8 @@ body {
   min-height: 38px;
   border: 0;
   border-radius: 9px;
-  background: #d7f5df;
-  color: #143322;
+  background: #e0e7ff;
+  color: #312e81;
   font: 700 1.14rem/1 "Chivo", sans-serif;
   cursor: pointer;
 }
@@ -99,15 +96,15 @@ button {
   padding: 0.46rem 0.56rem;
   min-height: 34px;
   font: 700 0.78rem/1 "Chivo", sans-serif;
-  color: #143322;
-  background: #d7f5df;
+  color: #312e81;
+  background: #e0e7ff;
   cursor: pointer;
   transition: transform 110ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(25, 78, 55, 0.16);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
 
 button.is-active {
@@ -118,19 +115,19 @@ button.is-active {
 .small {
   margin-top: 0.16rem;
   font-size: 0.72rem;
-  color: #294739;
+  color: #64748b;
 }
 
 #gameCanvas {
   width: auto;
-  height: 100%;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
   display: block;
   margin: 0 auto;
   border-radius: 14px;
-  border: 1px solid rgba(27, 107, 53, 0.26);
-  background: linear-gradient(180deg, #e7fff3 0%, #c3eee9 100%);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: #f1f5f9;
   cursor: default;
   touch-action: none;
   -webkit-user-select: none;
@@ -149,7 +146,7 @@ button.is-active {
   border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 0.48rem 0.56rem;
-  box-shadow: 0 6px 14px rgba(18, 66, 52, 0.08);
+  box-shadow: 0 6px 14px rgba(30, 41, 59, 0.08);
 }
 
 .results-card {
@@ -183,17 +180,17 @@ h2 {
 .stack-label {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #284839;
+  color: #334155;
 }
 
 .stack-track {
   position: relative;
   height: 0.76rem;
   border-radius: 999px;
-  background: #eef4ef;
+  background: #e2e8f0;
   overflow: hidden;
   display: flex;
-  border: 1px solid rgba(18, 72, 51, 0.16);
+  border: 1px solid rgba(99, 102, 241, 0.12);
 }
 
 .stack-track.is-disabled {
@@ -222,7 +219,7 @@ h2 {
 
 .legend-item {
   font-size: 0.64rem;
-  color: #284839;
+  color: #475569;
   white-space: nowrap;
 }
 
@@ -232,7 +229,7 @@ h2 {
   z-index: 30;
   display: grid;
   align-items: end;
-  background: rgba(8, 22, 16, 0.22);
+  background: rgba(15, 23, 42, 0.2);
   padding: 0.8rem;
 }
 
@@ -244,9 +241,9 @@ h2 {
   width: min(560px, 100%);
   margin: 0 auto;
   border-radius: 18px 18px 14px 14px;
-  border: 1px solid rgba(20, 80, 58, 0.2);
-  background: rgba(248, 255, 247, 0.98);
-  box-shadow: 0 15px 34px rgba(10, 48, 31, 0.25);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 15px 34px rgba(15, 23, 42, 0.18);
   padding: 0.72rem;
 }
 
@@ -267,7 +264,8 @@ h2 {
 .press-menu-cancel {
   width: 100%;
   margin-top: 0.62rem;
-  background: #f6e5e5;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .rules-modal {
@@ -277,7 +275,7 @@ h2 {
   display: grid;
   place-items: center;
   padding: 0.8rem;
-  background: rgba(8, 22, 16, 0.38);
+  background: rgba(15, 23, 42, 0.32);
 }
 
 .rules-modal[hidden] {
@@ -287,9 +285,9 @@ h2 {
 .rules-sheet {
   width: min(620px, 100%);
   background: #fff;
-  border: 1px solid rgba(20, 80, 58, 0.24);
+  border: 1px solid rgba(99, 102, 241, 0.18);
   border-radius: 14px;
-  box-shadow: 0 18px 38px rgba(10, 48, 31, 0.32);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
   padding: 0.85rem;
 }
 
@@ -300,14 +298,14 @@ h2 {
 .rules-sheet p {
   margin: 0;
   font-size: 0.84rem;
-  color: #2a493a;
+  color: #475569;
 }
 
 .rules-list {
   margin: 0.55rem 0 0.7rem;
   padding-left: 1rem;
   font-size: 0.8rem;
-  color: #1f392e;
+  color: #334155;
   display: grid;
   gap: 0.22rem;
 }
