@@ -15,6 +15,12 @@ const rulesCloseBtn = document.getElementById("rulesCloseBtn");
 
 const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
 
+// Size canvas to exactly fill its container on every device.
+// W is always 1000 (internal game coordinates); H adapts to the screen shape.
+const shellRect = canvas.parentElement.getBoundingClientRect();
+canvas.width = 1000;
+canvas.height = Math.round(1000 * shellRect.height / shellRect.width);
+
 const W = canvas.width;
 const H = canvas.height;
 const BIN_HEIGHT = 120;
@@ -181,13 +187,12 @@ function seedBoard() {
   const startY = 80;
   const rowGap = 68;
   const colGap = 86;
-  for (let row = 0; row < 16; row += 1) {
+  const maxY = H - BIN_HEIGHT - 24;
+  for (let row = 0; startY + row * rowGap < maxY; row += 1) {
     const y = startY + row * rowGap;
     const offset = row % 2 === 0 ? 72 : 114;
     for (let x = offset; x < W - 56; x += colGap) {
-      if (y < H - BIN_HEIGHT - 24) {
-        state.pegs.push({ x, y, r: PEG_RADIUS });
-      }
+      state.pegs.push({ x, y, r: PEG_RADIUS });
     }
   }
 }
