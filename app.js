@@ -53,7 +53,8 @@ const colorIds = Object.keys(colorGroups);
 const binColorOrder = ["orange", "red", "green", "blue", "purple"];
 const BIN_COUNT = binColorOrder.length;
 
-const target = { purple: 50, blue: 23, green: 15, red: 9, orange: 3 };
+// U.S. Census Bureau 2024: share of aggregate household income by quintile
+const target = { purple: 52, blue: 23, green: 14, red: 8, orange: 3 };
 
 const state = {
   gravity: DEFAULT_GRAVITY,
@@ -501,9 +502,10 @@ function computeMetrics() {
 }
 
 function getScoreMessage(score, cur) {
-  if (score >= 97) return "Nailed it!";
-  if (score >= 93) return "Almost perfect \u2014 tiny tweaks!";
-  if (score >= 88) return "Dialed in!";
+  if (score >= 97) return "Nailed it! That's America.";
+  if (score >= 94) return "Almost perfect \u2014 tiny tweaks!";
+  if (score >= 90) return "Impressive! You really get inequality.";
+  if (score >= 88) return "Dialed in \u2014 just a nudge or two off.";
 
   // Analyze what's actually wrong
   const topDiff = cur.purple - target.purple;       // 80-100%
@@ -513,35 +515,48 @@ function getScoreMessage(score, cur) {
   const bottomDiff = cur.orange - target.orange;     // 0-20%
   const bottomHalf = cur.orange + cur.red;
   const topHalf = cur.purple + cur.blue;
+  const bottomThree = cur.orange + cur.red + cur.green;
 
   if (score >= 78) {
-    // Close — give specific nudge
-    if (topDiff < -5) return "Almost! A bit more needs to reach the top.";
-    if (bottomDiff > 4) return "Close! The poorest quintile is getting too much.";
-    if (midDiff > 4) return "Nearly there \u2014 slim down the middle class a bit.";
+    if (topDiff < -5) return "Almost! The top quintile needs a bigger slice.";
+    if (topDiff > 5) return "Close, but too much is pooling at the top.";
+    if (bottomDiff > 4) return "The bottom 20% is getting more than reality allows.";
+    if (midDiff > 4) return "Nearly there \u2014 the middle class is a touch too big.";
+    if (upperDiff > 5) return "The 60-80% bracket is a bit bloated.";
+    if (lowerDiff > 4) return "Trim the 20-40% bracket a little.";
     return "So close! Fine-tune your levers.";
   }
 
   if (score >= 60) {
-    if (topDiff < -12) return "The top 20% needs way more of the pie.";
-    if (bottomHalf > 35) return "Too much at the bottom \u2014 reality is harsher.";
-    if (midDiff > 10) return "Middle class is too big. Shrink it.";
+    if (topDiff < -12) return "The top 20% gets over half. Send more right!";
+    if (topDiff < -8) return "Not enough reaching the wealthiest quintile.";
+    if (bottomHalf > 30) return "Too much at the bottom \u2014 reality is harsher.";
+    if (midDiff > 10) return "Middle class is too big. Sounds nice, but nope.";
     if (topDiff > 10) return "Even the real economy isn't that top-heavy!";
-    return "Getting there \u2014 check which quintiles are off.";
+    if (upperDiff > 10) return "The 60-80% range is grabbing too much.";
+    if (bottomThree > 40) return "Bottom 60% is way over budget.";
+    return "Getting there \u2014 pause and check which quintiles are off.";
   }
 
   if (score >= 40) {
     if (topDiff < -20) return "The rich aren't rich enough yet. Seriously.";
-    if (Math.abs(cur.purple - 20) < 5 && Math.abs(cur.orange - 20) < 5) return "Too equal! The real world is less fair.";
-    if (bottomHalf > 40) return "Way too much going to the bottom half.";
-    if (midDiff > 15) return "That's a huge middle class \u2014 not how it works.";
+    if (Math.abs(cur.purple - 20) < 5 && Math.abs(cur.orange - 20) < 5) return "Too equal! The real world is way less fair.";
+    if (bottomHalf > 40) return "Way too much going to the bottom 40%.";
+    if (midDiff > 15) return "That's a massive middle class \u2014 not how it works.";
+    if (cur.orange > 15) return "Bottom 20% getting 15%+? Wishful thinking.";
+    if (topHalf > 90) return "Whoa \u2014 you built an oligarchy, not the U.S.";
+    if (cur.purple > 70) return "Top quintile over 70%? Even America isn't there yet.";
     return "Big gaps \u2014 try angling some levers.";
   }
 
   // Very low scores
   if (topHalf < 30) return "Almost nothing reaches the top. Funnel it right!";
   if (bottomHalf > 50) return "Half the income to the bottom 40%? If only.";
+  if (bottomThree > 70) return "70%+ to the bottom three quintiles? That's Sweden's dream.";
+  if (cur.purple < 10) return "Top 20% getting under 10%? That's never happened.";
+  if (cur.orange > 25) return "Bottom quintile at 25%? That's a different country.";
   if (state.levers.length === 0 && state.totalCaptured > 20) return "Try drawing some levers to redirect the flow!";
+  if (Math.abs(topDiff) < 8 && bottomHalf > 35) return "Top is okay but the bottom gets way too much.";
   return "Wild distribution \u2014 keep experimenting!";
 }
 
