@@ -290,6 +290,29 @@ h2 {
   gap: 0.22rem;
 }
 
+.explainer-heading {
+  margin: 0.7rem 0 0.2rem;
+  font: 700 0.82rem/1 "Baloo 2", sans-serif;
+  color: #6366f1;
+}
+
+.explainer-intro {
+  margin: 0.2rem 0;
+  font-size: 0.76rem;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.explainer-list {
+  margin: 0.3rem 0 0.4rem;
+  padding-left: 1rem;
+  font-size: 0.74rem;
+  color: #334155;
+  display: grid;
+  gap: 0.28rem;
+  line-height: 1.35;
+}
+
 .rules-close {
   width: 100%;
 }
