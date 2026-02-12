@@ -2,6 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const statusText = document.getElementById("statusText");
+const adviceText = document.getElementById("adviceText");
 const barsEl = document.getElementById("bars");
 const pauseBtn = document.getElementById("pauseBtn");
 const pausedActions = document.getElementById("pausedActions");
@@ -618,8 +619,9 @@ function updateHud() {
   renderStackRow(state.barRefs.currentTrack, metrics.currentByColor, "Current");
   const msg = getScoreMessage(metrics.score, metrics.currentByColor);
   const prefix = state.mode === "wealth" ? "Wealth" : "Score";
-  statusText.textContent = `${prefix}: ${metrics.score} \u2014 ${msg}`;
+  statusText.textContent = `${prefix}: ${metrics.score}`;
   statusText.style.color = getScoreColor(metrics.score);
+  adviceText.textContent = msg;
 }
 
 function update(dt) {
