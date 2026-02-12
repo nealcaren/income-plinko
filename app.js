@@ -40,7 +40,7 @@ const DRAG_START_DISTANCE = isCoarsePointer ? 9 : 6;
 const LONG_PRESS_MS = isCoarsePointer ? 360 : 430;
 const DEFAULT_GRAVITY = 1050;
 const DEFAULT_SPAWN = isCoarsePointer ? 14 : 16;
-const SCORE_WINDOW = 100;
+const SCORE_WINDOW = 200;
 const RULES_SEEN_KEY = "income_plinko_rules_seen_v1";
 
 const colorGroups = {
@@ -506,7 +506,7 @@ function computeMetrics() {
   );
 
   // Wealth mode is much harder — score more generously
-  const penalty = state.mode === "wealth" ? 0.7 : 1.15;
+  const penalty = state.mode === "wealth" ? 0.55 : 0.85;
   const score = windowCount === 0 ? 0 : Math.max(0, Math.round(100 - totalAbsError * penalty));
 
   return {
