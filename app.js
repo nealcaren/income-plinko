@@ -14,9 +14,15 @@ const pressMenu = document.getElementById("pressMenu");
 const pressMenuTitle = document.getElementById("pressMenuTitle");
 const pressMenuActions = document.getElementById("pressMenuActions");
 const pressMenuCancel = document.getElementById("pressMenuCancel");
-const rulesModal = document.getElementById("rulesModal");
-const rulesCloseBtn = document.getElementById("rulesCloseBtn");
-const modeToggleBtn = document.getElementById("modeToggleBtn");
+const timerText = document.getElementById("timerText");
+const unlockBanner = document.getElementById("unlockBanner");
+const wealthModeBtn = document.getElementById("wealthModeBtn");
+const onboardingModal = document.getElementById("onboardingModal");
+const onboardStep1 = document.getElementById("onboardStep1");
+const onboardStep2 = document.getElementById("onboardStep2");
+const onboardNext1 = document.getElementById("onboardNext1");
+const onboardTryIt = document.getElementById("onboardTryIt");
+const onboardBanner = document.getElementById("onboardBanner");
 
 const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
 
@@ -41,7 +47,9 @@ const LONG_PRESS_MS = isCoarsePointer ? 360 : 430;
 const DEFAULT_GRAVITY = 1050;
 const DEFAULT_SPAWN = isCoarsePointer ? 14 : 16;
 const SCORE_WINDOW = 200;
-const RULES_SEEN_KEY = "income_plinko_rules_seen_v1";
+const GAME_DURATION = 300; // 5 minutes in seconds
+const ONBOARDING_DONE_KEY = "trickle_down_onboarding_done_v1";
+const WEALTH_UNLOCKED_KEY = "trickle_down_wealth_unlocked_v1";
 
 const colorGroups = {
   purple: { name: "Purple", label: "80-100%", hex: "#a855f7" },
@@ -86,7 +94,32 @@ const state = {
   activePointerId: null,
   menuContext: null,
   paused: false,
+  // Timer
+  elapsedTime: 0,
+  timerActive: false,
+  timeUp: false,
+  // Wealth unlock
+  wealthUnlocked: false,
+  wealthUnlockShown: false,
+  // Onboarding
+  onboardingStep: 0, // 0=not started, 1=step1 showing, 2=step2 showing, 3=ghost lever, 4=done
+  firstLeverDrawn: false,
+  ghostLever: null,
 };
+
+// localStorage helpers
+function getOnboardingDone() {
+  try { return window.localStorage.getItem(ONBOARDING_DONE_KEY) === "1"; } catch { return false; }
+}
+function setOnboardingDone() {
+  try { window.localStorage.setItem(ONBOARDING_DONE_KEY, "1"); } catch {}
+}
+function getWealthUnlocked() {
+  try { return window.localStorage.getItem(WEALTH_UNLOCKED_KEY) === "1"; } catch { return false; }
+}
+function setWealthUnlocked() {
+  try { window.localStorage.setItem(WEALTH_UNLOCKED_KEY, "1"); } catch {}
+}
 
 function hexToRgba(hex, alpha) {
   const clean = hex.replace("#", "");
@@ -614,6 +647,31 @@ function getScoreColor(score) {
   return "#ef4444";
 }
 
+function formatTime(seconds) {
+  const s = Math.max(0, Math.ceil(seconds));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+function updateTimerDisplay() {
+  const remaining = Math.max(0, GAME_DURATION - state.elapsedTime);
+  timerText.textContent = formatTime(remaining);
+  if (remaining < 60) {
+    timerText.classList.add("timer-warning");
+  } else {
+    timerText.classList.remove("timer-warning");
+  }
+}
+
+function showUnlockBanner() {
+  if (state.wealthUnlockShown) return;
+  state.wealthUnlockShown = true;
+  unlockBanner.hidden = false;
+  wealthModeBtn.hidden = false;
+  setTimeout(() => { unlockBanner.hidden = true; }, 5000);
+}
+
 function updateHud() {
   const metrics = computeMetrics();
   renderStackRow(state.barRefs.currentTrack, metrics.currentByColor, "Current");
@@ -622,6 +680,19 @@ function updateHud() {
   statusText.textContent = `${prefix}: ${metrics.score}`;
   statusText.style.color = getScoreColor(metrics.score);
   adviceText.textContent = msg;
+  updateTimerDisplay();
+
+  // Wealth unlock detection
+  if (!state.wealthUnlocked && state.mode === "income" && metrics.score >= 85) {
+    state.wealthUnlocked = true;
+    setWealthUnlocked();
+    showUnlockBanner();
+  }
+
+  // Show wealth button if already unlocked
+  if (state.wealthUnlocked && !state.timeUp) {
+    wealthModeBtn.hidden = false;
+  }
 }
 
 function update(dt) {
@@ -787,6 +858,32 @@ function drawLevers() {
   }
 }
 
+function drawGhostLever(now) {
+  if (!state.ghostLever) return;
+  const gl = state.ghostLever;
+  const pulse = 0.4 + 0.6 * Math.abs(Math.sin(now / 600));
+  ctx.save();
+  ctx.strokeStyle = `rgba(0, 224, 255, ${pulse})`;
+  ctx.lineWidth = 6;
+  ctx.setLineDash([12, 8]);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(gl.x1, gl.y1);
+  ctx.lineTo(gl.x2, gl.y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // "Draw here" label
+  const mx = (gl.x1 + gl.x2) / 2;
+  const my = (gl.y1 + gl.y2) / 2 - 22;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 28px Baloo 2";
+  ctx.fillStyle = `rgba(0, 224, 255, ${pulse})`;
+  ctx.fillText("Draw here", mx, my);
+  ctx.restore();
+}
+
 function drawParticles() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -801,39 +898,6 @@ function drawParticles() {
     ctx.fillText("$", 0, 2);
     ctx.restore();
   }
-}
-
-function getRulesSeen() {
-  try {
-    return window.localStorage.getItem(RULES_SEEN_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function setRulesSeen() {
-  try {
-    window.localStorage.setItem(RULES_SEEN_KEY, "1");
-  } catch {
-    // ignore storage errors
-  }
-}
-
-function updateModeToggleLabel() {
-  const otherLabel = state.mode === "income" ? "Wealth" : "Income";
-  modeToggleBtn.textContent = `Switch to ${otherLabel} Mode`;
-}
-
-function openRulesModal(markSeen = false) {
-  if (markSeen) setRulesSeen();
-  hidePressMenu();
-  resetMenuSheetPosition();
-  updateModeToggleLabel();
-  rulesModal.hidden = false;
-}
-
-function closeRulesModal() {
-  rulesModal.hidden = true;
 }
 
 function drawBinStack() {
@@ -863,13 +927,163 @@ function drawBinStack() {
   }
 }
 
-function draw() {
+function draw(now) {
   drawBackground();
   drawBins();
   drawBinStack();
   drawPegs();
   drawLevers();
+  drawGhostLever(now);
   drawParticles();
+}
+
+// Onboarding
+function startOnboarding() {
+  state.onboardingStep = 1;
+  onboardStep1.hidden = false;
+  onboardStep2.hidden = true;
+  onboardingModal.hidden = false;
+}
+
+function showOnboardStep2() {
+  state.onboardingStep = 2;
+  onboardStep1.hidden = true;
+  onboardStep2.hidden = false;
+}
+
+function closeOnboardingModal() {
+  onboardingModal.hidden = true;
+}
+
+function activateGhostLever() {
+  state.onboardingStep = 3;
+  closeOnboardingModal();
+  // Place ghost lever in upper-right area
+  const gx1 = W * 0.55;
+  const gy1 = H * 0.18;
+  const gx2 = W * 0.75;
+  const gy2 = H * 0.25;
+  state.ghostLever = { x1: gx1, y1: gy1, x2: gx2, y2: gy2 };
+}
+
+function onFirstLeverDrawn() {
+  if (state.firstLeverDrawn) return;
+  state.firstLeverDrawn = true;
+  state.ghostLever = null;
+  state.onboardingStep = 4;
+  setOnboardingDone();
+
+  // Show step 3 banner
+  onboardBanner.textContent = "Nice! Watch your score below. Get it above 85 to master inequality.";
+  onboardBanner.hidden = false;
+  setTimeout(() => { onboardBanner.hidden = true; }, 5000);
+
+  // Start the timer now
+  state.timerActive = true;
+}
+
+onboardNext1.addEventListener("click", showOnboardStep2);
+onboardTryIt.addEventListener("click", activateGhostLever);
+
+// Pause stats with sociological content
+function renderPausedStats() {
+  const metrics = computeMetrics();
+  const modeLabel = getModeLabel();
+  let html = '<div class="stats-card">';
+
+  if (state.timeUp) {
+    html += '<p class="time-up-banner">Time\'s up!</p>';
+  }
+
+  html += `<p class="stats-mode-label">Mode: U.S. ${modeLabel} Distribution</p>`;
+  html += '<div class="stats-grid">';
+  html += '<div class="stats-header"><span>Quintile</span><span>Current</span><span>Target</span><span>Diff</span></div>';
+  binColorOrder.forEach((colorId) => {
+    const current = metrics.currentByColor[colorId];
+    const swatch = `<span class="swatch" style="background:${colorGroups[colorId].hex}"></span>`;
+    const t = metrics.targetByColor[colorId];
+    const diff = current - t;
+    const sign = diff >= 0 ? "+" : "";
+    const diffClass = diff > 0.5 ? "over" : diff < -0.5 ? "under" : "close";
+    html += `<div class="stats-row"><span class="stats-color">${swatch}${colorGroups[colorId].label}</span><span class="stats-current">${current.toFixed(1)}%</span><span class="stats-target">${t}%</span><span class="stats-diff ${diffClass}">${sign}${diff.toFixed(1)}</span></div>`;
+  });
+  html += "</div>";
+  html += `<p class="stats-score">Score: ${metrics.score}/100</p>`;
+  html += `<p class="stats-note">Based on last ${metrics.windowCount} balls</p>`;
+
+  // Wealth mode switch in pause overlay
+  if (state.wealthUnlocked) {
+    const switchLabel = state.mode === "income" ? "Switch to Wealth Mode" : "Switch to Income Mode";
+    html += `<button id="statsWealthSwitch" class="stats-wealth-switch">${switchLabel}</button>`;
+  }
+
+  // Sociological explainer
+  html += '<details class="stats-explainer"><summary>Think About It</summary>';
+  html += '<p class="explainer-intro">Without levers, dollars split roughly equally. Every lever you add is a structural force pushing money toward one group. Sound familiar?</p>';
+  html += '<ul class="explainer-list">';
+  html += '<li><strong>Top levers</strong> &mdash; Legacy advantages: family wealth, zip code, connections at birth. Small early nudges that compound over a lifetime.</li>';
+  html += '<li><strong>Middle levers</strong> &mdash; Institutional channels: school funding, hiring networks, tax policy. The invisible pipelines that move money upward.</li>';
+  html += '<li><strong>Bottom levers</strong> &mdash; Sorting gates: who gets into which bin at the end. Predatory lending, medical debt, and housing costs keep the bottom locked out, while winner-take-more dynamics tip the upper-middle into the top.</li>';
+  html += '</ul>';
+  html += '<p class="explainer-intro">Notice how many levers it takes to recreate real inequality. The &ldquo;fair&rdquo; baseline &mdash; no levers &mdash; is an equal split. Every lever is a policy choice.</p>';
+  html += '</details>';
+
+  html += "</div>";
+  statsContent.innerHTML = html;
+
+  // Wealth switch handler in pause overlay
+  const statsSwitch = statsContent.querySelector("#statsWealthSwitch");
+  if (statsSwitch) {
+    statsSwitch.addEventListener("click", () => {
+      switchMode();
+      renderPausedStats();
+    });
+  }
+}
+
+function switchMode() {
+  state.mode = state.mode === "income" ? "wealth" : "income";
+  resetCounts();
+  state.particles = [];
+  updateWealthModeBtn();
+}
+
+function updateWealthModeBtn() {
+  if (!state.wealthUnlocked) {
+    wealthModeBtn.hidden = true;
+    return;
+  }
+  const label = state.mode === "income" ? "Switch to Wealth Mode" : "Switch to Income Mode";
+  wealthModeBtn.textContent = label;
+  wealthModeBtn.hidden = state.timeUp;
+}
+
+function setPaused(paused) {
+  state.paused = paused;
+  if (state.paused) {
+    pauseBtn.hidden = true;
+    pausedActions.hidden = false;
+    pausedStats.hidden = false;
+    wealthModeBtn.hidden = true;
+    renderPausedStats();
+  } else {
+    pauseBtn.hidden = false;
+    pausedActions.hidden = true;
+    pausedStats.hidden = true;
+    updateWealthModeBtn();
+  }
+}
+
+function restart() {
+  seedBoard();
+  resetCounts();
+  state.particles = [];
+  state.elapsedTime = 0;
+  state.timeUp = false;
+  state.timerActive = true;
+  state.mode = "income";
+  updateWealthModeBtn();
+  setPaused(false);
 }
 
 let lastTime = performance.now();
@@ -878,8 +1092,19 @@ function animate(now) {
   const dt = Math.min(0.032, (now - lastTime) / 1000);
   lastTime = now;
 
-  if (!state.paused) update(dt);
-  draw();
+  if (!state.paused) {
+    update(dt);
+    // Timer
+    if (state.timerActive && !state.timeUp) {
+      state.elapsedTime += dt;
+      if (state.elapsedTime >= GAME_DURATION) {
+        state.elapsedTime = GAME_DURATION;
+        state.timeUp = true;
+        setPaused(true);
+      }
+    }
+  }
+  draw(now);
   hudTimer += dt;
   if (hudTimer > 0.09) {
     updateHud();
@@ -971,8 +1196,15 @@ function onPointerRelease(event) {
   const duration = interaction ? performance.now() - interaction.downAt : 0;
 
   if (state.draftLever) {
+    const beforeCount = state.levers.length;
     addLever(state.draftLever.x1, state.draftLever.y1, state.draftLever.x2, state.draftLever.y2);
     state.draftLever = null;
+
+    // Detect first lever drawn for onboarding
+    if (state.levers.length > beforeCount && !state.firstLeverDrawn) {
+      onFirstLeverDrawn();
+    }
+
     releaseActivePointer(event.pointerId);
     return;
   }
@@ -996,58 +1228,17 @@ canvas.addEventListener("pointerup", onPointerRelease);
 canvas.addEventListener("pointercancel", onPointerRelease);
 canvas.addEventListener("pointerleave", onPointerRelease);
 
-function renderPausedStats() {
-  const metrics = computeMetrics();
-  const modeLabel = getModeLabel();
-  let html = '<div class="stats-card">';
-  html += `<p class="stats-mode-label">Mode: U.S. ${modeLabel} Distribution</p>`;
-  html += '<div class="stats-grid">';
-  html += '<div class="stats-header"><span>Quintile</span><span>Current</span><span>Target</span><span>Diff</span></div>';
-  binColorOrder.forEach((colorId) => {
-    const current = metrics.currentByColor[colorId];
-    const swatch = `<span class="swatch" style="background:${colorGroups[colorId].hex}"></span>`;
-    const t = metrics.targetByColor[colorId];
-    const diff = current - t;
-    const sign = diff >= 0 ? "+" : "";
-    const diffClass = diff > 0.5 ? "over" : diff < -0.5 ? "under" : "close";
-    html += `<div class="stats-row"><span class="stats-color">${swatch}${colorGroups[colorId].label}</span><span class="stats-current">${current.toFixed(1)}%</span><span class="stats-target">${t}%</span><span class="stats-diff ${diffClass}">${sign}${diff.toFixed(1)}</span></div>`;
-  });
-  html += "</div>";
-  html += `<p class="stats-score">Score: ${metrics.score}/100</p>`;
-  html += `<p class="stats-note">Based on last ${metrics.windowCount} balls</p>`;
-  html += '<p class="stats-note"><a href="#" id="statsHelpLink" style="color:#6366f1">How to play</a></p>';
-  html += "</div>";
-  statsContent.innerHTML = html;
-  statsContent.querySelector("#statsHelpLink").addEventListener("click", (e) => {
-    e.preventDefault();
-    openRulesModal(false);
-  });
-}
-
-function setPaused(paused) {
-  state.paused = paused;
-  if (state.paused) {
-    pauseBtn.hidden = true;
-    pausedActions.hidden = false;
-    pausedStats.hidden = false;
-    renderPausedStats();
-  } else {
-    pauseBtn.hidden = false;
-    pausedActions.hidden = true;
-    pausedStats.hidden = true;
-  }
-}
-
-function restart() {
-  seedBoard();
-  resetCounts();
-  state.particles = [];
-  setPaused(false);
-}
-
 pauseBtn.addEventListener("click", () => setPaused(true));
-resumeBtn.addEventListener("click", () => setPaused(false));
+resumeBtn.addEventListener("click", () => {
+  if (state.timeUp) return;
+  setPaused(false);
+});
 restartBtn.addEventListener("click", restart);
+
+wealthModeBtn.addEventListener("click", () => {
+  switchMode();
+  if (state.paused) renderPausedStats();
+});
 
 pressMenuCancel.addEventListener("click", () => {
   hidePressMenu();
@@ -1069,22 +1260,8 @@ pressMenu.addEventListener("click", (event) => {
   updateHud();
 });
 
-rulesCloseBtn.addEventListener("click", () => {
-  closeRulesModal();
-});
-
-modeToggleBtn.addEventListener("click", () => {
-  state.mode = state.mode === "income" ? "wealth" : "income";
-  resetCounts();
-  state.particles = [];
-  updateModeToggleLabel();
-  if (state.paused) renderPausedStats();
-  closeRulesModal();
-});
-
-rulesModal.addEventListener("click", (event) => {
-  if (event.target !== rulesModal) return;
-  closeRulesModal();
+onboardingModal.addEventListener("click", (event) => {
+  // Don't allow dismiss by clicking backdrop during onboarding
 });
 
 window.addEventListener("resize", () => {
@@ -1094,18 +1271,33 @@ window.addEventListener("resize", () => {
 
 window.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
-  if (!rulesModal.hidden) {
-    closeRulesModal();
-    return;
-  }
+  if (!onboardingModal.hidden) return; // Don't dismiss onboarding with Escape
   hidePressMenu();
   resetMenuSheetPosition();
 });
 
+// Initialization
 initBars();
 seedBoard();
 resetCounts();
 updateHud();
 if (isCoarsePointer) canvas.style.cursor = "default";
-if (!getRulesSeen()) openRulesModal(true);
+
+// Load persisted state
+if (getWealthUnlocked()) {
+  state.wealthUnlocked = true;
+  state.wealthUnlockShown = true; // Don't re-show the banner
+  wealthModeBtn.hidden = false;
+  updateWealthModeBtn();
+}
+
+// Start onboarding or timer
+if (!getOnboardingDone()) {
+  startOnboarding();
+} else {
+  state.onboardingStep = 4;
+  state.firstLeverDrawn = true;
+  state.timerActive = true;
+}
+
 requestAnimationFrame(animate);

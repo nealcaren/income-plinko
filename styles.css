@@ -43,11 +43,27 @@ body {
   overflow: hidden;
 }
 
+.title-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .title-block h1 {
   margin: 0;
   text-align: center;
   font: 700 1.16rem/1 "Baloo 2", sans-serif;
   letter-spacing: 0.02em;
+}
+
+.timer-text {
+  font: 700 0.88rem/1 "Baloo 2", sans-serif;
+  color: #475569;
+}
+
+.timer-text.timer-warning {
+  color: #ef4444;
 }
 
 
@@ -132,8 +148,8 @@ h2 {
 .status {
   margin: 0.24rem 0 0;
   min-height: 1.08rem;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font: 700 1.4rem/1.1 "Baloo 2", sans-serif;
+  text-align: center;
 }
 
 .advice {
@@ -142,6 +158,7 @@ h2 {
   font-size: 0.76rem;
   font-weight: 400;
   color: #475569;
+  text-align: center;
 }
 
 .bars {
@@ -412,18 +429,104 @@ h2 {
   text-align: center;
 }
 
-.mode-toggle-btn {
+.wealth-mode-btn {
+  width: 100%;
+  margin-top: 0.2rem;
+  background: linear-gradient(110deg, #a855f7, #6366f1);
+  color: #fff;
+  font-size: 0.72rem;
+  min-height: 28px;
+  padding: 0.3rem 0.5rem;
+}
+
+.wealth-mode-btn[hidden] { display: none; }
+
+.unlock-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(110deg, #a855f7, #6366f1);
+  color: #fff;
+  font: 700 1.1rem/1 "Baloo 2", sans-serif;
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+  z-index: 10;
+  animation: unlockPulse 0.5s ease;
+  white-space: nowrap;
+}
+
+.unlock-banner[hidden] { display: none; }
+
+@keyframes unlockPulse {
+  0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(1.05); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.onboard-banner {
+  position: fixed;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(110deg, #6366f1, #0ea5e9);
+  color: #fff;
+  font: 700 0.82rem/1.3 "Baloo 2", sans-serif;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  z-index: 50;
+  max-width: 90vw;
+  text-align: center;
+  animation: bannerSlide 0.4s ease;
+}
+
+.onboard-banner[hidden] { display: none; }
+
+@keyframes bannerSlide {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+.stats-explainer {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: #334155;
+}
+
+.stats-explainer summary {
+  cursor: pointer;
+  font: 700 0.76rem/1 "Baloo 2", sans-serif;
+  color: #6366f1;
+}
+
+.stats-explainer .explainer-intro {
+  margin: 0.2rem 0;
+  font-size: 0.7rem;
+}
+
+.stats-explainer .explainer-list {
+  margin: 0.2rem 0;
+  padding-left: 0.9rem;
+  font-size: 0.68rem;
+}
+
+.stats-wealth-switch {
   width: 100%;
   margin-top: 0.35rem;
-  background: #e2e8f0;
-  color: #64748b;
-  font-size: 0.64rem;
+  background: linear-gradient(110deg, #a855f7, #6366f1);
+  color: #fff;
+  font-size: 0.68rem;
   min-height: 26px;
   padding: 0.24rem 0.5rem;
 }
 
-.rules-mode-btn {
-  margin-top: 0.5rem;
+.time-up-banner {
+  text-align: center;
+  font: 700 1.1rem/1 "Baloo 2", sans-serif;
+  color: #ef4444;
+  margin-bottom: 0.4rem;
 }
 
 .stats-score {

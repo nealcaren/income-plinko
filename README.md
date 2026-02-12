@@ -1,27 +1,25 @@
-# Income Plinko Lab
+# Trickle Down
 
-Interactive classroom web app for teaching income distribution with a plinko-style simulation.
+Interactive classroom web app for teaching U.S. income and wealth inequality with a plinko-style simulation.
 
-Live demo: https://nealcaren.github.io/income-plinko/
+Live demo: https://professorcaren.github.io/trickle-down/
 
 ## What It Does
 
-- Dollars flow continuously through pegs and levers.
-- Students can build and tune a stable routing system in real time.
-- Modes:
-  - `Flat`
-  - `Fair`
-  - `Actual U.S.`
-  - `Free Play` (no target)
-- Evaluation uses a rolling window of the last 100 balls (stability over time).
+- Dollars fall continuously through pegs and levers into quintile bins.
+- Students draw and adjust levers to redirect the flow until their distribution matches real U.S. income inequality.
+- Score is based on a rolling window of the last 200 balls — consistency matters.
+- A 5-minute game timer adds urgency.
+- Reaching a score of 85+ in income mode unlocks **Wealth Mode**, which challenges students to recreate the even more extreme U.S. wealth distribution.
+- Guided onboarding walks first-time users through the mechanics step by step.
 
 ## Controls
 
-- Draw lever: drag on blank board space.
-- Move lever: drag a lever body.
-- Rotate lever: drag a lever endpoint.
-- Add/delete objects: right-click or long-press on board.
-- Extra options: click `...` (Help, Reset Samples, Reset Board).
+- **Draw lever**: drag on blank board space.
+- **Move lever**: drag a lever body.
+- **Rotate lever**: drag a lever endpoint.
+- **Add/delete objects**: right-click or long-press on board.
+- **Pause**: view detailed stats comparing your distribution to the target.
 
 ## Run Locally
 
@@ -37,10 +35,8 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Notes
+## Files
 
-- `_draft/` is ignored by git and not published.
-- Main app files:
-  - `index.html`
-  - `styles.css`
-  - `app.js`
+- `index.html`
+- `styles.css`
+- `app.js`

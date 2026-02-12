@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>$ Drop</title>
+  <title>Trickle Down</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Chivo:wght@400;700&display=swap" rel="stylesheet">
@@ -13,13 +13,15 @@
   <main class="layout">
     <section class="board-wrap">
       <header class="title-block">
-        <h1>$ Drop</h1>
+        <h1>Trickle Down</h1>
+        <span id="timerText" class="timer-text"></span>
       </header>
       <div class="canvas-shell">
-        <canvas id="gameCanvas" aria-label="Income distribution plinko game"></canvas>
+        <canvas id="gameCanvas" aria-label="Trickle Down income distribution game"></canvas>
         <div id="pausedStats" class="paused-overlay" hidden>
           <div id="statsContent"></div>
         </div>
+        <div id="unlockBanner" class="unlock-banner" hidden>Wealth Mode Unlocked!</div>
       </div>
       <section class="card results-card">
         <div id="playingHud">
@@ -28,6 +30,7 @@
           <p id="adviceText" class="advice"></p>
         </div>
         <button id="pauseBtn" class="pause-btn">Pause</button>
+        <button id="wealthModeBtn" class="wealth-mode-btn" hidden>Switch to Wealth Mode</button>
         <div id="pausedActions" class="paused-actions" hidden>
           <button id="resumeBtn" class="action-btn resume-btn">Resume</button>
           <button id="restartBtn" class="action-btn restart-btn">Restart</button>
@@ -44,29 +47,21 @@
     </div>
   </div>
 
-  <div id="rulesModal" class="rules-modal" hidden>
+  <div id="onboardingModal" class="rules-modal" hidden>
     <div class="rules-sheet" role="dialog" aria-modal="true" aria-label="How to play">
-      <h2>How To Play</h2>
-      <p>Sort the falling dollars so they match the current U.S. income distribution.</p>
-      <ul class="rules-list">
-        <li>Drag on blank space to draw a lever.</li>
-        <li>Drag lever body to move, drag lever ends to rotate.</li>
-        <li>Long-press or right-click to add/delete pegs and levers.</li>
-        <li>Score uses only the last 200 balls, so consistency matters.</li>
-        <li>Pause to see how your distribution compares to the target.</li>
-      </ul>
-      <h3 class="explainer-heading">Think About It</h3>
-      <p class="explainer-intro">Without levers, dollars split roughly equally. Every lever you add is a structural force pushing money toward one group. Sound familiar?</p>
-      <ul class="explainer-list">
-        <li><strong>Top levers</strong> &mdash; Legacy advantages: family wealth, zip code, connections at birth. Small early nudges that compound over a lifetime.</li>
-        <li><strong>Middle levers</strong> &mdash; Institutional channels: school funding, hiring networks, tax policy. The invisible pipelines that move money upward.</li>
-        <li><strong>Bottom levers</strong> &mdash; Sorting gates: who gets into which bin at the end. Predatory lending, medical debt, and housing costs keep the bottom locked out, while winner-take-more dynamics tip the upper-middle into the top.</li>
-      </ul>
-      <p class="explainer-intro">Notice how many levers it takes to recreate real inequality. The &ldquo;fair&rdquo; baseline &mdash; no levers &mdash; is an equal split. Every lever is a policy choice.</p>
-      <button id="rulesCloseBtn" class="rules-close">Start</button>
-      <button id="modeToggleBtn" class="mode-toggle-btn rules-mode-btn">Switch to Wealth Mode</button>
+      <div id="onboardStep1">
+        <h2>Trickle Down</h2>
+        <p>Dollars are falling from the sky. Your job: use levers to redirect the flow until it matches real U.S. income inequality.</p>
+        <button id="onboardNext1" class="rules-close">Next</button>
+      </div>
+      <div id="onboardStep2" hidden>
+        <h2>Draw Levers</h2>
+        <p>Drag on the board to draw a lever. Levers redirect falling dollars into the bins below.</p>
+        <button id="onboardTryIt" class="rules-close">Try It</button>
+      </div>
     </div>
   </div>
+  <div id="onboardBanner" class="onboard-banner" hidden></div>
   <script src="app.js"></script>
 </body>
 </html>
