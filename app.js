@@ -105,6 +105,7 @@ const state = {
   onboardingStep: 0, // 0=not started, 1=step1 showing, 2=step2 showing, 3=ghost lever, 4=done
   firstLeverDrawn: false,
   ghostLever: null,
+  lastAdviceBucket: -1,
 };
 
 // localStorage helpers
@@ -675,11 +676,16 @@ function showUnlockBanner() {
 function updateHud() {
   const metrics = computeMetrics();
   renderStackRow(state.barRefs.currentTrack, metrics.currentByColor, "Current");
-  const msg = getScoreMessage(metrics.score, metrics.currentByColor);
   const prefix = state.mode === "wealth" ? "Wealth" : "Score";
   statusText.textContent = `${prefix}: ${metrics.score}`;
   statusText.style.color = getScoreColor(metrics.score);
-  adviceText.textContent = msg;
+
+  // Only update advice when the score crosses a multiple-of-5 boundary
+  const bucket = Math.floor(metrics.score / 5);
+  if (bucket !== state.lastAdviceBucket) {
+    state.lastAdviceBucket = bucket;
+    adviceText.textContent = getScoreMessage(metrics.score, metrics.currentByColor);
+  }
   updateTimerDisplay();
 
   // Wealth unlock detection
@@ -974,7 +980,7 @@ function onFirstLeverDrawn() {
   setOnboardingDone();
 
   // Show step 3 banner
-  onboardBanner.textContent = "Nice! Watch your score below. Get it above 85 to master inequality.";
+  onboardBanner.textContent = "Nice! Watch your score below. Get it above 85 to understand the shape of inequality.";
   onboardBanner.hidden = false;
   setTimeout(() => { onboardBanner.hidden = true; }, 5000);
 
@@ -1045,6 +1051,7 @@ function switchMode() {
   state.mode = state.mode === "income" ? "wealth" : "income";
   resetCounts();
   state.particles = [];
+  state.lastAdviceBucket = -1;
   updateWealthModeBtn();
 }
 
@@ -1082,6 +1089,7 @@ function restart() {
   state.timeUp = false;
   state.timerActive = true;
   state.mode = "income";
+  state.lastAdviceBucket = -1;
   updateWealthModeBtn();
   setPaused(false);
 }
