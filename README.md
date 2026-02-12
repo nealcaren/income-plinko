@@ -4,6 +4,8 @@ Interactive classroom web app for teaching U.S. income and wealth inequality wit
 
 Live demo: https://professorcaren.github.io/trickle-down/
 
+![QR code for Trickle Down](qrcode.png)
+
 ## What It Does
 
 - Dollars fall continuously through pegs and levers into quintile bins.
